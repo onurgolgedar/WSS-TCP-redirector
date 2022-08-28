@@ -81,11 +81,12 @@ namespace WSS_TCP_redirector
       bool connectionEstablished;
       readonly int id;
       Server server;
-      TcpClient wsClient;
 
+      public TcpClient wsClient;
       public NetworkStream stream;
       public Queue<byte[]> packetToBeSent = new Queue<byte[]>();
       public ServerConnection serverConnection;
+      public bool isConnected = true;
 
       public User(int id, Server server, TcpClient wsClient)
       {
@@ -101,20 +102,20 @@ namespace WSS_TCP_redirector
       {
          try
          {
-            while (true)
+            while (isConnected)
             {
                byte[] bytes;
 
                if (connectionEstablished)
                {
-                  while (packetToBeSent.Count > 0)
+                  while (packetToBeSent.Count > 0 && isConnected)
                   {
                      bytes = packetToBeSent.Dequeue();
                      stream.Write(bytes, 0, bytes.Length);
                   }
                }
 
-               while (stream.DataAvailable)
+               while (stream.DataAvailable && isConnected)
                {
                   bytes = new byte[wsClient.Available];
                   stream.Read(bytes, 0, bytes.Length);
@@ -183,12 +184,19 @@ namespace WSS_TCP_redirector
          }
          catch (Exception e)
          {
-            Console.WriteLine($"E (C{id}) " + e.Message);
+            Console.WriteLine($"(E) (C{id}) " + e.Message);
          }
          finally
          {
+            isConnected = false;
+            wsClient.Close();
             server.users.Remove(id);
-            Console.WriteLine($"X (C{id}) The client is disconnected.");
+
+            serverConnection.isConnected = false;
+            serverConnection.tcpClient.Close();
+            server.serverConnections.Remove(id);
+
+            Console.WriteLine($"(X) (C{id}) The client is disconnected.");
          }
       }
    }
@@ -197,11 +205,12 @@ namespace WSS_TCP_redirector
    {
       readonly int id;
       Server server;
-      TcpClient tcpClient;
 
+      public TcpClient tcpClient;
       public NetworkStream stream;
       public Queue<byte[]> packetToBeSent = new Queue<byte[]>();
       public User user;
+      public bool isConnected = true;
 
       public ServerConnection(int id, Server server, TcpClient tcpClient)
       {
@@ -217,17 +226,17 @@ namespace WSS_TCP_redirector
       {
          try
          {
-            while (true)
+            while (isConnected)
             {
                byte[] bytes;
 
-               while (packetToBeSent.Count > 0)
+               while (packetToBeSent.Count > 0 && isConnected)
                {
                   bytes = packetToBeSent.Dequeue();
                   stream.Write(bytes, 0, bytes.Length);
                }
 
-               while (stream.DataAvailable)
+               while (stream.DataAvailable && isConnected)
                {
                   bytes = new byte[tcpClient.Available];
                   stream.Read(bytes, 0, bytes.Length);
@@ -246,12 +255,19 @@ namespace WSS_TCP_redirector
          }
          catch (Exception e)
          {
-            Console.WriteLine($"E (CC{id}) " + e.Message);
+            Console.WriteLine($"(E) (CC{id}) " + e.Message);
          }
          finally
          {
+            isConnected = false;
+            tcpClient.Close();
             server.serverConnections.Remove(id);
-            Console.WriteLine($"X(CC{id}) The cross client is disconnected.");
+
+            user.isConnected = false;
+            user.wsClient.Close();
+            server.users.Remove(id);
+
+            Console.WriteLine($"(X) (CC{id}) The cross client is disconnected.");
          }
       }
 
