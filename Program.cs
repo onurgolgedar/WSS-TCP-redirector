@@ -34,6 +34,7 @@ namespace WSS_TCP_redirector
       public Server(int port)
       {
          tcpListener = new TcpListener(new IPEndPoint(IPAddress.Any, port));
+
          users = new SortedList<int, User>();
          serverConnections = new SortedList<int, ServerConnection>();
       }
@@ -61,6 +62,7 @@ namespace WSS_TCP_redirector
 
             TcpClient tcpClient = new TcpClient();
             tcpClient.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 64198));
+            tcpClient.SendTimeout = 99999;
 
             ServerConnection serverConnection = new ServerConnection(ID, this, tcpClient);
             serverConnections.Add(ID, serverConnection);
@@ -300,11 +302,11 @@ namespace WSS_TCP_redirector
          user.packetToBeSent.Enqueue(responseBytes);
 
          #region CONSOLE WRITE
-         /*string buffer_string = "";
-         for (int i = 0; i < sendBytes.Length; i++)
-            buffer_string += "|" + sendBytes[i].ToString();
-         string text = Encoding.UTF8.GetString(sendBytes);
-         Console.WriteLine($"-> (CC{id}) Sent: " + text + $"\n{buffer_string}\n");*/
+         //string buffer_string = "";
+         //for (int i = 0; i < sendBytes.Length; i++)
+         //buffer_string += "|" + sendBytes[i].ToString();
+         //string text = Encoding.UTF8.GetString(sendBytes);
+         //Console.WriteLine($"-> (CC{id}) Sent: " + text + $"\n{buffer_string}\n");
          #endregion
       }
    }
